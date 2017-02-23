@@ -43,9 +43,11 @@ def get_pooling_types_dict():
     return d
 
 
-def get_edge_label(layer):
+def get_edge_label(layer, caffeNet):
     """Define edge label based on layer type.
     """
+    
+    layerName = str(layer.name)
 
     if layer.type == 'Data':
         edge_label = 'Batch ' + str(layer.data_param.batch_size)
@@ -59,7 +61,7 @@ def get_edge_label(layer):
     return edge_label
 
 
-def get_layer_label(layer, rankdir):
+def get_layer_label(layer, caffeNet, rankdir):
     """Define node label based on layer type.
 
     Parameters
@@ -77,25 +79,29 @@ def get_layer_label(layer, rankdir):
     if rankdir in ('TB', 'BT'):
         # If graph orientation is vertical, horizontal space is free and
         # vertical space is not; separate words with spaces
-        separator = ' '
+        separator = '\\n'
     else:
         # If graph orientation is horizontal, vertical space is free and
         # horizontal space is not; separate words with newlines
         separator = '\\n'
 
+    layerName = str(layer.name)
     if layer.type == 'Convolution' or layer.type == 'Deconvolution':
         # Outer double quotes needed or else colon characters don't parse
         # properly
-        node_label = '"%s%s(%s)%skernel size: %d%sstride: %d%spad: %d"' %\
+        filterShape = map(str, caffeNet.params[str(layerName)][0].data.shape)
+        strShape = 'x'.join(filterShape)
+        node_label = '"%s%s(%s)%skernel size: %d%sstride: %d%spad: %d\nfilter: %s"' %\
                      (layer.name,
                       separator,
                       layer.type,
                       separator,
-                      layer.convolution_param.kernel_size[0] if len(layer.convolution_param.kernel_size._values) else 1,
+                      layer.convolution_param.kernel_size[0] if len(layer.convolution_param.kernel_size) else 1,
                       separator,
-                      layer.convolution_param.stride[0] if len(layer.convolution_param.stride._values) else 1,
+                      layer.convolution_param.stride[0] if len(layer.convolution_param.stride) else 1,
                       separator,
-                      layer.convolution_param.pad[0] if len(layer.convolution_param.pad._values) else 0)
+                      layer.convolution_param.pad[0] if len(layer.convolution_param.pad) else 0,
+                      strShape)
     elif layer.type == 'Pooling':
         pooling_types_dict = get_pooling_types_dict()
         node_label = '"%s%s(%s %s)%skernel size: %d%sstride: %d%spad: %d"' %\
@@ -109,8 +115,11 @@ def get_layer_label(layer, rankdir):
                       layer.pooling_param.stride,
                       separator,
                       layer.pooling_param.pad)
-    else:
+    else:# if layer.type == 'ReLU':
         node_label = '"%s%s(%s)"' % (layer.name, separator, layer.type)
+    #else:
+    #    shape = map(str, list(caffeNet.blobs[layerName].data[0].shape))
+    #    node_label = '"%s%s(%s)\nOutput:%s"' % (layer.name, separator, layer.type, 'x'.join(shape))
     return node_label
 
 
@@ -118,8 +127,10 @@ def choose_color_by_layertype(layertype):
     """Define colors for nodes based on the layer type.
     """
     color = '#6495ED'  # Default
-    if layertype == 'Convolution' or layertype == 'Deconvolution':
-        color = '#FF5050'
+    if layertype == 'Convolution':
+        color = '#FF1919'
+    elif layertype == 'Deconvolution':
+        color = '#FF6565'
     elif layertype == 'Pooling':
         color = '#FF9900'
     elif layertype == 'InnerProduct':
@@ -127,7 +138,7 @@ def choose_color_by_layertype(layertype):
     return color
 
 
-def get_pydot_graph(caffe_net, rankdir, label_edges=True, phase=None):
+def get_pydot_graph(caffe_net, caffeNet, rankdir, label_edges=True, phase=None):
     """Create a data structure which represents the `caffe_net`.
 
     Parameters
@@ -164,7 +175,7 @@ def get_pydot_graph(caffe_net, rankdir, label_edges=True, phase=None):
             included = included and not layer_phase.phase == phase
           if not included:
             continue
-        node_label = get_layer_label(layer, rankdir)
+        node_label = get_layer_label(layer, caffeNet, rankdir)
         node_name = "%s_%s" % (layer.name, layer.type)
         if (len(layer.bottom) == 1 and len(layer.top) == 1 and
            layer.bottom[0] == layer.top[0]):
@@ -176,16 +187,20 @@ def get_pydot_graph(caffe_net, rankdir, label_edges=True, phase=None):
             layer_style['fillcolor'] = choose_color_by_layertype(layer.type)
             pydot_nodes[node_name] = pydot.Node(node_label, **layer_style)
         for bottom_blob in layer.bottom:
-            pydot_nodes[bottom_blob + '_blob'] = pydot.Node('%s' % bottom_blob,
+            tmpShape = map(str, caffeNet.blobs[str(bottom_blob)].data.shape)
+            strShape = 'x'.join(tmpShape)
+            pydot_nodes[bottom_blob + '_blob'] = pydot.Node('%s\n%s' % (bottom_blob, strShape),
                                                             **BLOB_STYLE)
             edge_label = '""'
             pydot_edges.append({'src': bottom_blob + '_blob',
                                 'dst': node_name,
                                 'label': edge_label})
         for top_blob in layer.top:
-            pydot_nodes[top_blob + '_blob'] = pydot.Node('%s' % (top_blob))
+            tmpShape = map(str, caffeNet.blobs[str(top_blob)].data.shape)
+            strShape = 'x'.join(tmpShape)
+            pydot_nodes[top_blob + '_blob'] = pydot.Node('%s\n%s' % (top_blob, strShape))
             if label_edges:
-                edge_label = get_edge_label(layer)
+                edge_label = get_edge_label(layer, caffeNet)
             else:
                 edge_label = '""'
             pydot_edges.append({'src': node_name,
@@ -202,7 +217,7 @@ def get_pydot_graph(caffe_net, rankdir, label_edges=True, phase=None):
     return pydot_graph
 
 
-def draw_net(caffe_net, rankdir, ext='png', phase=None):
+def draw_net(caffe_net, caffeNet, rankdir, ext='png', phase=None):
     """Draws a caffe net and returns the image string encoded using the given
     extension.
 
@@ -220,10 +235,10 @@ def draw_net(caffe_net, rankdir, ext='png', phase=None):
     string :
         Postscript representation of the graph.
     """
-    return get_pydot_graph(caffe_net, rankdir, phase=phase).create(format=ext)
+    return get_pydot_graph(caffe_net, caffeNet, rankdir, phase=phase).create(format=ext)
 
 
-def draw_net_to_file(caffe_net, filename, rankdir='LR', phase=None):
+def draw_net_to_file(caffe_net, caffeNet, filename, rankdir='LR', phase=None):
     """Draws a caffe net, and saves it to file using the format given as the
     file extension. Use '.raw' to output raw text that you can manually feed
     to graphviz to draw graphs.
@@ -241,4 +256,4 @@ def draw_net_to_file(caffe_net, filename, rankdir='LR', phase=None):
     """
     ext = filename[filename.rfind('.')+1:]
     with open(filename, 'wb') as fid:
-        fid.write(draw_net(caffe_net, rankdir, ext, phase))
+        fid.write(draw_net(caffe_net, caffeNet, rankdir, ext, phase))

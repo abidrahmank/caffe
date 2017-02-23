@@ -42,6 +42,7 @@ def main():
     args = parse_args()
     net = caffe_pb2.NetParameter()
     text_format.Merge(open(args.input_net_proto_file).read(), net)
+    caffeNet = caffe.Net(args.input_net_proto_file, caffe.TEST)
     print('Drawing net to %s' % args.output_image_file)
     phase=None;
     if args.phase == "TRAIN":
@@ -50,7 +51,7 @@ def main():
         phase = caffe.TEST
     elif args.phase != "ALL":
         raise ValueError("Unknown phase: " + args.phase)
-    caffe.draw.draw_net_to_file(net, args.output_image_file, args.rankdir,
+    caffe.draw.draw_net_to_file(net, caffeNet, args.output_image_file, args.rankdir,
                                 phase)
 
 
