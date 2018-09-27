@@ -74,6 +74,10 @@ Dtype SGDSolver<Dtype>::GetLearningRate() {
     } else {
         rate = this->param_.base_lr();
     }
+    if(this->iter_ > this->param_.end_lr_policy()){
+      double m = (this->param_.end_lr() - this->param_.base_lr()) / (this->param_.max_iter() - this->param_.end_lr_policy());
+      rate = (this->iter_ - this->param_.end_lr_policy()) * m + this->param_.base_lr();
+    }
   } else if (lr_policy == "triangular2") {
     int itr = this->iter_ - this->param_.start_lr_policy();
     if (itr > 0) {
@@ -83,6 +87,14 @@ Dtype SGDSolver<Dtype>::GetLearningRate() {
         rate = this->param_.base_lr() + (this->param_.max_lr() - this->param_.base_lr())
             * std::min(double(1), std::max(double(0), (1.0-
             fabs(x))/pow(2.0, double(cycle))));
+    } else {
+        rate = this->param_.base_lr();
+    }
+  } else if (lr_policy == "exp_growth") {
+    int itr = this->iter_;
+    if (itr > 0 ){
+      double beta = (log(this->param_.max_lr()) - log(this->param_.base_lr())) / this->param_.max_iter();
+      rate = this->param_.base_lr() * exp(beta * itr);
     } else {
         rate = this->param_.base_lr();
     }

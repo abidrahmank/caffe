@@ -258,6 +258,9 @@ message SolverParameter {
 
   optional float start_lr_policy = 43;
   optional float max_lr = 44;
+  optional float end_lr_policy = 45;
+  optional float peak_factor = 46 [default = 0.5];
+  optional float end_lr = 47 [default = 1e-6];
 }
 
 // A message that stores the solver snapshots
