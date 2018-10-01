@@ -261,6 +261,8 @@ message SolverParameter {
   optional float end_lr_policy = 45;
   optional float peak_factor = 46 [default = 0.5];
   optional float end_lr = 47 [default = 1e-6];
+
+  repeated float cyclical_momentum = 48;
 }
 
 // A message that stores the solver snapshots

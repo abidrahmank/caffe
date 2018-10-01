@@ -74,7 +74,7 @@ Dtype SGDSolver<Dtype>::GetLearningRate() {
     } else {
         rate = this->param_.base_lr();
     }
-    if(this->iter_ > this->param_.end_lr_policy()){
+    if(this->param_.has_end_lr_policy() && this->iter_ > this->param_.end_lr_policy()){
       double m = (this->param_.end_lr() - this->param_.base_lr()) / (this->param_.max_iter() - this->param_.end_lr_policy());
       rate = (this->iter_ - this->param_.end_lr_policy()) * m + this->param_.base_lr();
     }
@@ -145,7 +145,7 @@ void SGDSolver<Dtype>::ApplyUpdate() {
   Dtype rate = GetLearningRate();
   if (this->param_.display() && this->iter_ % this->param_.display() == 0) {
     LOG_IF(INFO, Caffe::root_solver()) << "Iteration " << this->iter_
-        << ", lr = " << rate;
+        << ", lr = " << rate << ", momentum = " << this->momentum_;
   }
   ClipGradients();
   for (int param_id = 0; param_id < this->net_->learnable_params().size();
@@ -259,7 +259,28 @@ template <typename Dtype>
 void SGDSolver<Dtype>::ComputeUpdateValue(int param_id, Dtype rate) {
   const vector<Blob<Dtype>*>& net_params = this->net_->learnable_params();
   const vector<float>& net_params_lr = this->net_->params_lr();
+
   Dtype momentum = this->param_.momentum();
+  if (this->param_.has_end_lr_policy() && this->iter_ > this->param_.end_lr_policy()) {
+    momentum = 0.99;
+  } else if (this->param_.cyclical_momentum_size() == 2) {
+    int cycle = this->iter_ / (2 * this->param_.cyclical_momentum(1));
+    float x = (float) (this->iter_ - (2*cycle+1)*this->param_.cyclical_momentum(1));
+    x = x / this->param_.cyclical_momentum(1);
+//     momentum = this->param_.momentum() + 
+// 		(this->param_.cyclical_momentum(0) - this->param_.momentum()) * 
+// 		std::min(double(1), std::max(double(0), (1.0 - fabs(x))/pow(2.0, double(cycle))));
+//     momentum = this->param_.momentum() + 
+// 		(this->param_.cyclical_momentum(0) - this->param_.momentum()) * 
+// 		    std::max(double(0), (1.0 - fabs(x)));
+    momentum = this->param_.cyclical_momentum(0) - 
+		(this->param_.cyclical_momentum(0) - this->param_.momentum()) * 
+		    std::max(double(0), (1.0 - fabs(x)));
+  }  
+
+  this->momentum_ = momentum;
+
+
   Dtype local_rate = rate * net_params_lr[param_id];
   // Compute the update to history, then copy it to the parameter diff.
   switch (Caffe::mode()) {
