@@ -43,11 +43,14 @@ class Solver {
  public:
   Dtype momentum_;
   Dtype rate_;
+  std::vector<Dtype> lr_file_;
+  std::vector<Dtype> mu_file_;
   explicit Solver(const SolverParameter& param);
   explicit Solver(const string& param_file);
   void Init(const SolverParameter& param);
   void InitTrainNet();
   void InitTestNets();
+  std::vector<Dtype> readtxt(const string& filename);
 
   // Client of the Solver optionally may call this in order to set the function
   // that the solver uses to see what action it should take (e.g. snapshot or

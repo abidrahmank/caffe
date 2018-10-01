@@ -98,6 +98,13 @@ Dtype SGDSolver<Dtype>::GetLearningRate() {
     } else {
         rate = this->param_.base_lr();
     }
+  } else if (lr_policy == "file") {
+      if (this->iter_ >= this->lr_file_.size()) {
+	LOG(INFO) << "LR file overflow : current_step v/s lr_file.size -> " << this->iter_ << " v/s " << this->lr_file_.size();
+	rate = this->lr_file_.back();
+      } else {
+        rate = this->lr_file_.at(this->iter_);
+      }
   } else {
     LOG(FATAL) << "Unknown learning rate policy: " << lr_policy;
   }
@@ -277,7 +284,16 @@ void SGDSolver<Dtype>::ComputeUpdateValue(int param_id, Dtype rate) {
     momentum = this->param_.cyclical_momentum(0) - 
 		(this->param_.cyclical_momentum(0) - this->param_.momentum()) * 
 		    std::max(double(0), (1.0 - fabs(x)));
-  }  
+  } else if (this->param_.lr_policy() == "file") {
+      if (this->mu_file_.empty()) {
+        momentum = this->param_.momentum();
+      } else if (this->iter_ >= this->mu_file_.size()) {
+	LOG(INFO) << "MU file overflow : iter v/s mu_file.size -> " << this->iter_ << " v/s " << this->mu_file_.size();
+	momentum = this->mu_file_.back();
+      } else {
+        momentum = this->mu_file_.at(this->iter_);
+      }
+  }
 
   this->momentum_ = momentum;
 

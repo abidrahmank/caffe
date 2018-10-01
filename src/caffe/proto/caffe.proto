@@ -263,6 +263,8 @@ message SolverParameter {
   optional float end_lr = 47 [default = 1e-6];
 
   repeated float cyclical_momentum = 48;
+  optional string lr_file = 49;
+  optional string mu_file = 50;
 }
 
 // A message that stores the solver snapshots

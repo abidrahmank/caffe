@@ -41,6 +41,16 @@ Solver<Dtype>::Solver(const string& param_file)
 }
 
 template <typename Dtype>
+std::vector<Dtype> Solver<Dtype>::readtxt(const string& filename) {
+  std::ifstream fs(filename.c_str());
+  LOG_IF(FATAL, !fs) << filename << " not found";
+  std::vector<Dtype> data;
+  std::copy(std::istream_iterator<Dtype>(fs), std::istream_iterator<Dtype>(),
+	    std::back_inserter(data));
+  return data;
+}
+
+template <typename Dtype>
 void Solver<Dtype>::Init(const SolverParameter& param) {
   LOG_IF(INFO, Caffe::root_solver()) << "Initializing solver from parameters: "
     << std::endl << param.DebugString();
@@ -58,6 +68,8 @@ void Solver<Dtype>::Init(const SolverParameter& param) {
   }
   iter_ = 0;
   current_step_ = 0;
+  if(param.has_lr_file()) {lr_file_ = readtxt(param.lr_file()); }
+  if(param.has_mu_file()) {mu_file_ = readtxt(param.mu_file()); }
 }
 
 // Load weights from the caffemodel(s) specified in "weights" solver parameter
