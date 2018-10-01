@@ -42,6 +42,7 @@ template <typename Dtype>
 class Solver {
  public:
   Dtype momentum_;
+  Dtype rate_;
   explicit Solver(const SolverParameter& param);
   explicit Solver(const string& param_file);
   void Init(const SolverParameter& param);

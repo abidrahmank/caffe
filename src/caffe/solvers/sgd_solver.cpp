@@ -101,6 +101,7 @@ Dtype SGDSolver<Dtype>::GetLearningRate() {
   } else {
     LOG(FATAL) << "Unknown learning rate policy: " << lr_policy;
   }
+  this->rate_ = rate;
   return rate;
 }
 
@@ -143,10 +144,10 @@ void SGDSolver<Dtype>::ClipGradients() {
 template <typename Dtype>
 void SGDSolver<Dtype>::ApplyUpdate() {
   Dtype rate = GetLearningRate();
-  if (this->param_.display() && this->iter_ % this->param_.display() == 0) {
-    LOG_IF(INFO, Caffe::root_solver()) << "Iteration " << this->iter_
-        << ", lr = " << rate << ", momentum = " << this->momentum_;
-  }
+  // if (this->param_.display() && this->iter_ % this->param_.display() == 0) {
+  //   LOG_IF(INFO, Caffe::root_solver()) << "Iteration " << this->iter_
+  //       << ", lr = " << rate << ", momentum = " << this->momentum_;
+  // }
   ClipGradients();
   for (int param_id = 0; param_id < this->net_->learnable_params().size();
        ++param_id) {

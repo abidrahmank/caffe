@@ -236,9 +236,9 @@ void Solver<Dtype>::Step(int iters) {
     if (display) {
       float lapse = iteration_timer_.Seconds();
       float per_s = (iter_ - iterations_last_) / (lapse ? lapse : 1);
-      LOG_IF(INFO, Caffe::root_solver()) << "Iteration " << iter_
+      LOG_IF(INFO, Caffe::root_solver()) << "Performance "
           << " (" << per_s << " iter/s, " << lapse << "s/"
-          << param_.display() << " iters), loss = " << smoothed_loss_;
+          << param_.display();
       iteration_timer_.Start();
       iterations_last_ = iter_;
       const vector<Blob<Dtype>*>& result = net_->output_blobs();
@@ -255,9 +255,14 @@ void Solver<Dtype>::Step(int iters) {
             loss_msg_stream << " (* " << loss_weight
                             << " = " << loss_weight * result_vec[k] << " loss)";
           }
-          LOG_IF(INFO, Caffe::root_solver()) << "    Train net output #"
+          LOG_IF(INFO, iter_ > 0 && momentum_ >= 0.0 && momentum_ <= 1.0 
+				&& Caffe::root_solver()) 
+	      << " Iteration = " << iter_
+	      << "; lr = " << rate_
+              << "; mu = " << momentum_
+              << "; Train net output #"
               << score_index++ << ": " << output_name << " = "
-              << result_vec[k] << loss_msg_stream.str();
+              << result_vec[k]; // << loss_msg_stream.str();
         }
       }
     }
@@ -411,8 +416,13 @@ void Solver<Dtype>::Test(const int test_net_id) {
       loss_msg_stream << " (* " << loss_weight
                       << " = " << loss_weight * mean_score << " loss)";
     }
-    LOG(INFO) << "    Test net output #" << i << ": " << output_name << " = "
-              << mean_score << loss_msg_stream.str();
+    // LOG(INFO) << "    Test net output #" << i << ": " << output_name << " = "
+    //           << mean_score; // << loss_msg_stream.str();
+    
+    LOG(INFO) << " Iteration = " << iter_
+        << "; Test net output #" << i << ": " << output_name << " = "
+              << mean_score; // << loss_msg_stream.str();
+
   }
 }
 
