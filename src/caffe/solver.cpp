@@ -47,6 +47,7 @@ std::vector<Dtype> Solver<Dtype>::readtxt(const string& filename) {
   std::vector<Dtype> data;
   std::copy(std::istream_iterator<Dtype>(fs), std::istream_iterator<Dtype>(),
 	    std::back_inserter(data));
+  fs.close()
   return data;
 }
 
