@@ -270,7 +270,7 @@ void SGDSolver<Dtype>::ComputeUpdateValue(int param_id, Dtype rate) {
 
   Dtype momentum = this->param_.momentum();
   if (this->param_.has_end_lr_policy() && this->iter_ > this->param_.end_lr_policy()) {
-    momentum = 0.99;
+    momentum = this->param_.end_mu();
   } else if (this->param_.cyclical_momentum_size() == 2) {
     int cycle = this->iter_ / (2 * this->param_.cyclical_momentum(1));
     float x = (float) (this->iter_ - (2*cycle+1)*this->param_.cyclical_momentum(1));

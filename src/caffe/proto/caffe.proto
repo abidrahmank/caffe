@@ -261,6 +261,7 @@ message SolverParameter {
   optional float end_lr_policy = 45;
   optional float peak_factor = 46 [default = 0.5];
   optional float end_lr = 47 [default = 1e-6];
+  optional float end_mu = 51 [default = 0.99];
 
   repeated float cyclical_momentum = 48;
   optional string lr_file = 49;
