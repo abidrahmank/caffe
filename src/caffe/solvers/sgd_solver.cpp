@@ -130,13 +130,26 @@ void SGDSolver<Dtype>::PreSolve() {
 template <typename Dtype>
 void SGDSolver<Dtype>::ClipGradients() {
   const Dtype clip_gradients = this->param_.clip_gradients();
-  if (clip_gradients < 0) { return; }
-  const vector<Blob<Dtype>*>& net_params = this->net_->learnable_params();
   Dtype sumsq_diff = 0;
-  for (int i = 0; i < net_params.size(); ++i) {
-    sumsq_diff += net_params[i]->sumsq_diff();
+  Dtype l2norm_diff = 0;
+  const vector<Blob<Dtype>*>& net_params = this->net_->learnable_params();
+
+  if (clip_gradients >= 0) {
+    for (int i = 0; i < net_params.size(); ++i) {
+      sumsq_diff += net_params[i]->sumsq_diff();
+    }
+    l2norm_diff = std::sqrt(sumsq_diff);
+    if (this->iter_ % this->param_.display() == 0) {
+      LOG_IF(INFO, Caffe::root_solver()) 
+                << "Iteration = " << this->iter_
+  	        << "; lr = " << this->rate_
+                << "; mu = " << this->momentum_
+  	        << "; L2 norm of gradients = " << l2norm_diff;
+    }
   }
-  const Dtype l2norm_diff = std::sqrt(sumsq_diff);
+
+  if (clip_gradients <= 0) { return; }
+
   if (l2norm_diff > clip_gradients) {
     Dtype scale_factor = clip_gradients / l2norm_diff;
     LOG(INFO) << "Gradient clipping: scaling down gradients (L2 norm "

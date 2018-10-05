@@ -432,7 +432,9 @@ void Solver<Dtype>::Test(const int test_net_id) {
     // LOG(INFO) << "    Test net output #" << i << ": " << output_name << " = "
     //           << mean_score; // << loss_msg_stream.str();
     
-    LOG(INFO) << " Iteration = " << iter_
+    LOG(INFO) << "Iteration = " << iter_
+	<< "; lr = " << this->rate_
+	<< "; mu = " << this->momentum_
         << "; Test net output #" << i << ": " << output_name << " = "
               << mean_score; // << loss_msg_stream.str();
 
